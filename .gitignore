@@ -7,3 +7,4 @@ venv/
 *.bin
 *.pt
 *.pth
+datasets/malicious_phish.csv
