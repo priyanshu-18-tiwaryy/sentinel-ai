@@ -1,109 +1,17 @@
 import React, { useState, useEffect } from 'react';
-
 const BACKEND = 'http://localhost:8000';
-const currentUser =
-  sessionStorage.getItem("username");
 
 const THREAT_COLORS = {
-  Phishing: '#E74C3C', Cyberbullying: '#8E44AD', Scam: '#E67E22',
-  Harassment: '#C0392B', 'Online Job Fraud': '#D35400',
-  'Cyber Stalking': '#7D3C98', 'Cyber Grooming': '#6C3483',
-  Spamming: '#2E86C1', Impersonation: '#1ABC9C', Benign: '#27AE60'
+  Phishing:'#FF2D55',Cyberbullying:'#A855F7',Scam:'#FF6B35',Harassment:'#FF2D55',
+  HateSpeech:'#FF2D55',SexualContent:'#FF2D55',Radicalization:'#FF2D55',
+  Malware:'#FF2D55',Grooming:'#A855F7',SelfHarm:'#FF6B35',FakeNews:'#FFB800',
+  Spam:'#0099FF',Doxxing:'#FF6B35',Impersonation:'#A855F7',Aggression:'#FF6B35',
+  Toxic:'#FFB800',Defacement:'#0099FF',Misinformation:'#FFB800',Benign:'#00FFD1',
 };
 
-export default function ChatLogPage({ user, onBack }) {
-  const [chatLog, setChatLog] = useState('');
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState(null);
-  useEffect(() => {
+const currentUser = sessionStorage.getItem('username');
 
-  const savedChat =
-    localStorage.getItem(
-      'chat_analysis'
-    );
-
-  if (savedChat) {
-    setChatLog(savedChat);
-  }
-
-}, []);
-
-  const analyze = async () => {
-    if (!chatLog.trim()) return;
-    setLoading(true);
-    setResults([]);
-    setSummary(null);
-
-    // Split chat log into individual lines/messages
-    const lines = chatLog.split('\n').filter(l => l.trim().length > 3);
-    const analyzed = [];
-
-    for (const line of lines) {
-      try {
-        const res = await fetch(`${BACKEND}/classify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: line.trim() })
-        });
-        const data = await res.json();
-        analyzed.push({ text: line.trim(), ...data });
-      } catch {
-        analyzed.push({ text: line.trim(), label: 'Error', confidence: 0, is_threat: false, color: '#888', icon: '❓' });
-      }
-    }
-
-    setResults(analyzed);
-
-    // Build summary
-    const threats = analyzed.filter(r => r.is_threat);
-    const breakdown = {};
-    threats.forEach(t => { breakdown[t.label] = (breakdown[t.label] || 0) + 1; });
-    setSummary({
-      total: analyzed.length,
-      threats: threats.length,
-      safe: analyzed.length - threats.length,
-      breakdown,
-      verdict: threats.length === 0 ? 'SAFE' : threats.length <= 2 ? 'SUSPICIOUS' : 'DANGEROUS'
-    });
-
-    setLoading(false);
-  };
-
-  const S = {
-    page: { minHeight: '100vh', background: '#0D1B2A', fontFamily: "'Inter',sans-serif", color: '#FFFFFF' },
-    topbar: { background: '#132338', borderBottom: '1px solid #1E3A5F', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16 },
-    backBtn: { padding: '8px 16px', borderRadius: 8, border: '1px solid #1E3A5F', background: 'transparent', color: '#8FA8D0', cursor: 'pointer', fontSize: 13 },
-    body: { padding: '24px', maxWidth: 900, margin: '0 auto' },
-    title: { fontSize: 22, fontWeight: 700, marginBottom: 4 },
-    sub: { fontSize: 13, color: '#5D8AA8', marginBottom: 24 },
-    textarea: { width: '100%', minHeight: 180, background: '#132338', border: '1px solid #1E3A5F', borderRadius: 12, padding: 16, color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter,sans-serif', resize: 'vertical', outline: 'none', boxSizing: 'border-box' },
-    analyzeBtn: { marginTop: 12, padding: '12px 32px', borderRadius: 10, background: loading ? '#333' : 'linear-gradient(135deg,#C0392B,#E74C3C)', border: 'none', color: '#FFFFFF', fontWeight: 700, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer', width: '100%' },
-    summaryCard: (verdict) => ({
-      background: verdict === 'SAFE' ? '#0D2A1A' : verdict === 'SUSPICIOUS' ? '#2A1A0D' : '#2A0D0D',
-      border: `2px solid ${verdict === 'SAFE' ? '#27AE60' : verdict === 'SUSPICIOUS' ? '#E67E22' : '#C0392B'}`,
-      borderRadius: 14, padding: '20px 24px', marginTop: 24, marginBottom: 20
-    }),
-    verdictText: (verdict) => ({ fontSize: 22, fontWeight: 700, color: verdict === 'SAFE' ? '#27AE60' : verdict === 'SUSPICIOUS' ? '#E67E22' : '#C0392B' }),
-    statsRow: { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginTop: 16 },
-    statBox: (color) => ({ background: '#132338', border: `1px solid ${color}44`, borderRadius: 10, padding: '14px', textAlign: 'center', borderLeft: `4px solid ${color}` }),
-    statNum: (color) => ({ fontSize: 28, fontWeight: 700, color }),
-    statLbl: { fontSize: 12, color: '#8FA8D0', marginTop: 4 },
-    resultItem: (color, isThreat) => ({
-      background: isThreat ? color + '11' : '#132338',
-      border: `1px solid ${isThreat ? color + '55' : '#1E3A5F'}`,
-      borderRadius: 10, padding: '12px 16px', marginBottom: 8,
-      borderLeft: `4px solid ${isThreat ? color : '#1E3A5F'}`
-    }),
-    msgText: { fontSize: 13, color: '#FFFFFF', marginBottom: 6, lineHeight: 1.5 },
-    badge: (color) => ({ display: 'inline-block', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 10, background: color + '22', color, border: `1px solid ${color}44` }),
-    conf: { fontSize: 11, color: '#5D8AA8', marginLeft: 8 },
-    sectionTitle: { fontSize: 12, fontWeight: 600, color: '#5D8AA8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, marginTop: 20 },
-    breakdownItem: (color) => ({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: color + '11', borderRadius: 8, marginBottom: 6, border: `1px solid ${color}33` }),
-    example: { background: '#132338', borderRadius: 10, padding: 16, marginBottom: 16, border: '1px solid #1E3A5F', fontSize: 13, color: '#8FA8D0', lineHeight: 1.8 }
-  };
-
-  const exampleLog = `User1: Hey can I talk to you privately?
+const exampleLog = `User1: Hey can I talk to you privately?
 User2: Sure what's up
 User1: I have screenshots of you. Pay me $500 or I'll send them to everyone you know
 User2: What? That's not true
@@ -112,162 +20,183 @@ User2: Please stop this
 User1: You're worthless. Nobody likes you anyway
 User1: Click here to verify your payment account immediately http://pay-now.xyz`;
 
+export default function ChatLogPage({ onBack }) {
+  const [chatLog, setChatLog] = useState('');
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(()=>{
+    const saved=localStorage.getItem('chat_analysis');
+    if(saved) setChatLog(saved);
+  },[]);
+
+  const analyze = async () => {
+    if(!chatLog.trim()) return;
+    setLoading(true); setResults([]); setSummary(null); setProgress(0);
+    const lines=chatLog.split('\n').filter(l=>l.trim().length>3);
+    const analyzed=[];
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i];
+      setProgress(Math.round(((i+1)/lines.length)*100));
+      try {
+        const res=await fetch(`${BACKEND}/classify`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:line.trim()})});
+        const data=await res.json();
+        analyzed.push({text:line.trim(),...data});
+      } catch {
+        analyzed.push({text:line.trim(),label:'Error',confidence:0,is_threat:false,color:'#888',icon:'❓'});
+      }
+    }
+    setResults(analyzed);
+    const threats=analyzed.filter(r=>r.is_threat);
+    const breakdown={};
+    threats.forEach(t=>{breakdown[t.label]=(breakdown[t.label]||0)+1;});
+    setSummary({
+      total:analyzed.length,threats:threats.length,safe:analyzed.length-threats.length,breakdown,
+      verdict:threats.length===0?'SAFE':threats.length<=2?'SUSPICIOUS':'DANGEROUS',
+    });
+    setLoading(false);
+  };
+
   return (
-    <div style={S.page}>
-      <div style={S.topbar}>
-        <button style={S.backBtn} onClick={onBack}>← Back to Chat</button>
-        <span style={{ fontSize: 20 }}>🛡️</span>
+    <div style={{minHeight:'100vh',background:'#04080F',fontFamily:"'Share Tech Mono',monospace",color:'#FFFFFF'}}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap');
+        *{box-sizing:border-box;}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes progress-fill{from{width:0}to{width:100%}}
+        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar-track{background:#04080F}
+        ::-webkit-scrollbar-thumb{background:rgba(0,255,209,0.2);border-radius:2px}
+        .log-textarea:focus{border-color:rgba(0,255,209,0.4)!important;outline:none;}
+      `}</style>
+
+      {/* Topbar */}
+      <div style={{background:'rgba(8,18,32,0.98)',borderBottom:'1px solid rgba(0,255,209,0.15)',padding:'0 24px',height:58,display:'flex',alignItems:'center',gap:16}}>
+        <button onClick={onBack} style={{padding:'6px 14px',borderRadius:2,border:'1px solid rgba(0,255,209,0.2)',background:'transparent',color:'rgba(0,255,209,0.6)',fontSize:9,cursor:'pointer',letterSpacing:2}}>← RETURN</button>
+        <span style={{fontSize:18}}>🛡️</span>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 16 }}>Chat Log Analysis</div>
-          <div style={{ fontSize: 11, color: '#4A6A8A' }}>Paste any chat conversation → BERT classifies each message</div>
+          <div style={{fontFamily:"'Orbitron',monospace",fontWeight:700,fontSize:13,letterSpacing:3}}>CHAT LOG ANALYZER</div>
+          <div style={{fontSize:9,color:'rgba(0,255,209,0.4)',letterSpacing:2}}>PASTE CONVERSATION · BERT CLASSIFIES EACH MESSAGE</div>
         </div>
       </div>
 
-      <div style={S.body}>
-        <div style={S.example}>
-          <div style={{ fontWeight: 600, color: '#5D8AA8', marginBottom: 8 }}>📋 Example format — paste your chat like this:</div>
-          {exampleLog.split('\n').map((l, i) => <div key={i}>{l}</div>)}
-          <button style={{ marginTop: 10, padding: '6px 14px', borderRadius: 8, border: '1px solid #2E86C1', background: '#2E86C122', color: '#2E86C1', cursor: 'pointer', fontSize: 12 }}
-            onClick={() => setChatLog(exampleLog)}>
-            Load Example Chat
+      <div style={{padding:'24px',maxWidth:900,margin:'0 auto'}}>
+        {/* Example format */}
+        <div style={{background:'rgba(8,18,32,0.8)',border:'1px solid rgba(0,255,209,0.1)',borderRadius:3,padding:'16px 20px',marginBottom:20}}>
+          <div style={{fontSize:9,color:'rgba(0,255,209,0.5)',letterSpacing:3,marginBottom:10}}>// EXAMPLE FORMAT</div>
+          {exampleLog.split('\n').map((l,i)=>(
+            <div key={i} style={{fontFamily:"'Rajdhani',sans-serif",fontSize:12,color:'rgba(255,255,255,0.35)',lineHeight:1.7}}>
+              <span style={{color:'rgba(0,255,209,0.3)'}}>{l.split(':')[0]}:</span>
+              {l.includes(':')?' '+l.split(':').slice(1).join(':'):''}
+            </div>
+          ))}
+          <button onClick={()=>setChatLog(exampleLog)} style={{marginTop:12,padding:'6px 14px',borderRadius:2,border:'1px solid rgba(0,255,209,0.2)',background:'rgba(0,255,209,0.05)',color:'rgba(0,255,209,0.6)',fontSize:9,cursor:'pointer',letterSpacing:2,fontFamily:"'Share Tech Mono',monospace"}}>
+            LOAD EXAMPLE →
           </button>
         </div>
 
+        {/* Textarea */}
         <textarea
-          style={S.textarea}
+          className="log-textarea"
           value={chatLog}
-          onChange={e => setChatLog(e.target.value)}
-          placeholder="Paste your full chat conversation here...&#10;&#10;Format:&#10;User1: message here&#10;User2: reply here&#10;User1: another message"
+          onChange={e=>setChatLog(e.target.value)}
+          placeholder="Paste your full chat conversation here...&#10;&#10;Format:&#10;User1: message here&#10;User2: reply here"
+          style={{
+            width:'100%',minHeight:180,
+            background:'rgba(8,18,32,0.8)',
+            border:'1px solid rgba(0,255,209,0.15)',
+            borderRadius:3,padding:'16px',
+            color:'#FFFFFF',fontSize:13,
+            fontFamily:"'Rajdhani',sans-serif",fontWeight:500,
+            resize:'vertical',lineHeight:1.7,
+            transition:'border .2s',
+          }}
         />
 
-        <button style={S.analyzeBtn} onClick={analyze} disabled={loading}>
-          {loading ? '🤖 Analyzing with BERT...' : '🔍 Analyze Chat Log with BERT'}
+        {/* Analyze button */}
+        <button onClick={analyze} disabled={loading} style={{
+          marginTop:10,width:'100%',padding:'14px',borderRadius:3,
+          background:loading?'rgba(255,255,255,0.03)':'rgba(0,255,209,0.06)',
+          border:`1px solid ${loading?'rgba(255,255,255,0.1)':'#00FFD1'}`,
+          color:loading?'rgba(255,255,255,0.3)':'#00FFD1',
+          fontFamily:"'Orbitron',monospace",fontWeight:700,fontSize:11,
+          cursor:loading?'not-allowed':'pointer',letterSpacing:4,transition:'all .2s',
+        }}>
+          {loading?`🤖 ANALYZING... ${progress}%`:'🔍 ANALYZE WITH BERT'}
         </button>
 
-        {summary && (
-          <>
-            <div style={S.summaryCard(summary.verdict)}>
-              <div style={S.verdictText(summary.verdict)}>
-                {summary.verdict === 'SAFE' ? '✅ SAFE CONVERSATION' :
-                  summary.verdict === 'SUSPICIOUS' ? '⚠️ SUSPICIOUS ACTIVITY DETECTED' :
-                    '🚨 DANGEROUS — MULTIPLE THREATS FOUND'}
-              </div>
-              <div style={{ fontSize: 13, color: '#8FA8D0', marginTop: 6 }}>
-                BERT model analyzed {summary.total} messages and found {summary.threats} threat{summary.threats !== 1 ? 's' : ''}
-              </div>
-              <div style={S.statsRow}>
-                <div style={S.statBox('#E74C3C')}>
-                  <div style={S.statNum('#E74C3C')}>{summary.threats}</div>
-                  <div style={S.statLbl}>Threats Detected</div>
-                </div>
-                <div style={S.statBox('#27AE60')}>
-                  <div style={S.statNum('#27AE60')}>{summary.safe}</div>
-                  <div style={S.statLbl}>Safe Messages</div>
-                </div>
-                <div style={S.statBox('#2E86C1')}>
-                  <div style={S.statNum('#2E86C1')}>{summary.total}</div>
-                  <div style={S.statLbl}>Total Analyzed</div>
-                </div>
-              </div>
-
-              {Object.keys(summary.breakdown).length > 0 && (
-                <>
-                  <div style={{ ...S.sectionTitle, marginTop: 20 }}>Threat Breakdown</div>
-                  {Object.entries(summary.breakdown).map(([label, count]) => (
-                    <div key={label} style={S.breakdownItem(THREAT_COLORS[label] || '#E74C3C')}>
-                      <span style={{ color: THREAT_COLORS[label] || '#E74C3C', fontWeight: 600 }}>{label}</span>
-                      <span style={{ color: '#FFFFFF', fontWeight: 700 }}>{count} message{count > 1 ? 's' : ''}</span>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-
-            <div style={S.sectionTitle}>Message-by-Message Analysis</div>
-            {results.map((r, i) => {
-
-  const sender =
-    r.text.includes(":")
-      ? r.text.split(":")[0].trim()
-      : "Unknown";
-
-  return (
-
-    <div
-      key={i}
-      style={S.resultItem(
-        r.color || '#888',
-        r.is_threat
-      )}
-    >
-
-      <div style={S.msgText}>
-        {r.text}
-      </div>
-
-      <span style={S.badge(r.color || '#888')}>
-        {r.icon} {r.label}
-      </span>
-
-      <span style={S.conf}>
-        {Math.round(
-          (r.confidence || 0) * 100
-        )}% confidence
-      </span>
-
-      {r.is_threat &&
-       sender !== currentUser && (
-
-        <div
-          style={{
-            marginTop: "15px",
-            padding: "14px",
-            background: "rgba(231,76,60,0.08)",
-            border: "1px solid #E74C3C",
-            borderRadius: "10px"
-          }}
-        >
-
-          <div
-            style={{
-              color: "#ff7675",
-              fontWeight: "bold",
-              marginBottom: "10px",
-              fontSize: "13px"
-            }}
-          >
-            ⚠ Threatening User Detected
+        {/* Progress bar */}
+        {loading&&(
+          <div style={{marginTop:8,height:2,background:'rgba(0,255,209,0.08)',borderRadius:2,overflow:'hidden'}}>
+            <div style={{height:'100%',width:progress+'%',background:'linear-gradient(90deg,#00FFD1,#0099FF)',borderRadius:2,transition:'width .2s ease'}}/>
           </div>
+        )}
 
-          <button
-            onClick={() => {
+        {/* Summary */}
+        {summary&&(
+          <div style={{
+            marginTop:20,
+            background: summary.verdict==='SAFE'?'rgba(0,255,50,0.04)':summary.verdict==='SUSPICIOUS'?'rgba(255,184,0,0.04)':'rgba(255,45,85,0.04)',
+            border: `2px solid ${summary.verdict==='SAFE'?'rgba(0,255,50,0.3)':summary.verdict==='SUSPICIOUS'?'rgba(255,184,0,0.3)':'rgba(255,45,85,0.3)'}`,
+            borderRadius:3,padding:'20px 24px',animation:'fadeIn .3s ease',
+          }}>
+            <div style={{fontFamily:"'Orbitron',monospace",fontWeight:700,fontSize:16,letterSpacing:4,color:summary.verdict==='SAFE'?'#00FF32':summary.verdict==='SUSPICIOUS'?'#FFB800':'#FF2D55',marginBottom:6}}>
+              {summary.verdict==='SAFE'?'✅ CONVERSATION SECURE':summary.verdict==='SUSPICIOUS'?'⚠ SUSPICIOUS ACTIVITY':'🚨 DANGEROUS — THREATS FOUND'}
+            </div>
+            <div style={{fontFamily:"'Rajdhani',sans-serif",fontSize:12,color:'rgba(255,255,255,0.4)',letterSpacing:1,marginBottom:16}}>
+              BERT analyzed {summary.total} messages · {summary.threats} threat{summary.threats!==1?'s':''} detected
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:16}}>
+              {[{n:summary.threats,l:'THREATS',c:'#FF2D55'},{n:summary.safe,l:'SAFE',c:'#00FFD1'},{n:summary.total,l:'TOTAL',c:'#0099FF'}].map(s=>(
+                <div key={s.l} style={{background:'rgba(0,0,0,0.3)',borderRadius:2,padding:'12px',textAlign:'center',borderLeft:`3px solid ${s.c}`}}>
+                  <div style={{fontFamily:"'Orbitron',monospace",fontSize:24,fontWeight:700,color:s.c}}>{s.n}</div>
+                  <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:8,color:'rgba(255,255,255,0.3)',marginTop:4,letterSpacing:2}}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+            {Object.keys(summary.breakdown).length>0&&(
+              <>
+                <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:'rgba(0,255,209,0.4)',letterSpacing:3,marginBottom:8}}>BREAKDOWN:</div>
+                {Object.entries(summary.breakdown).map(([label,count])=>(
+                  <div key={label} style={{display:'flex',justifyContent:'space-between',padding:'6px 10px',marginBottom:4,background:(THREAT_COLORS[label]||'#FF2D55')+'08',borderRadius:2,border:`1px solid ${(THREAT_COLORS[label]||'#FF2D55')}22`}}>
+                    <span style={{color:THREAT_COLORS[label]||'#FF2D55',fontSize:10,letterSpacing:2}}>{label.toUpperCase()}</span>
+                    <span style={{color:'#FFFFFF',fontWeight:700,fontSize:10}}>{count} MSG{count>1?'S':''}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
 
-              alert(
-                `${sender} blocked successfully`
+        {/* Message results */}
+        {results.length>0&&(
+          <div style={{marginTop:20}}>
+            <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:'rgba(0,255,209,0.4)',letterSpacing:3,marginBottom:12}}>// MESSAGE-BY-MESSAGE ANALYSIS</div>
+            {results.map((r,i)=>{
+              const sender=r.text.includes(':')?r.text.split(':')[0].trim():'Unknown';
+              const color=r.color||'#888';
+              return (
+                <div key={i} style={{
+                  background:r.is_threat?`${color}06`:'rgba(8,18,32,0.5)',
+                  border:`1px solid ${r.is_threat?color+'33':'rgba(0,255,209,0.06)'}`,
+                  borderRadius:2,padding:'10px 14px',marginBottom:6,
+                  borderLeft:`3px solid ${r.is_threat?color:'rgba(0,255,209,0.1)'}`,
+                  animation:`fadeIn .2s ease ${i*.02}s forwards`,opacity:0,
+                }}>
+                  <div style={{fontFamily:"'Rajdhani',sans-serif",fontSize:13,color:'rgba(255,255,255,0.8)',marginBottom:6,lineHeight:1.5}}>{r.text}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                    <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color,background:color+'15',borderRadius:1,padding:'2px 8px',letterSpacing:2,border:`1px solid ${color}33`}}>{r.icon} {r.label}</span>
+                    <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:'rgba(255,255,255,0.2)',letterSpacing:1}}>{Math.round((r.confidence||0)*100)}% CONFIDENCE</span>
+                    {r.is_threat&&sender!==currentUser&&(['Harassment','Phishing','Cyberbullying','SelfHarm','Grooming'].includes(r.label))&&(
+                      <button onClick={()=>alert(`${sender} blocked`)} style={{fontSize:9,color:'#FF2D55',background:'rgba(255,45,85,0.1)',border:'1px solid rgba(255,45,85,0.3)',padding:'2px 8px',borderRadius:1,cursor:'pointer',letterSpacing:2,fontFamily:"'Share Tech Mono',monospace"}}>🚫 BLOCK {sender.toUpperCase()}</button>
+                    )}
+                  </div>
+                </div>
               );
-
-            }}
-
-            style={{
-              background: "#E74C3C",
-              color: "white",
-              border: "none",
-              padding: "10px 16px",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold"
-            }}
-          >
-            🚫 Block {sender}
-          </button>
-
-        </div>
-      )}
-
-    </div>
-  );
-})}
-          </>
+            })}
+          </div>
         )}
       </div>
     </div>
